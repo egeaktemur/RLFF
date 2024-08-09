@@ -1,2 +1,2 @@
 # RLFF
-Reinforcement Learning usingForward-Forward Algorithm
+Reinforcement Learning using Forward-Forward Algorithm
