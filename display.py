@@ -1,6 +1,7 @@
 import math
 import pygame
 
+
 class LunarLanderDisplay:
     def __init__(self, lander, width=800, height=600):
         self.lander = lander
@@ -19,11 +20,13 @@ class LunarLanderDisplay:
         self.screen.fill(self.background_color)
 
         # Draw the surface
-        surface_rect = pygame.Rect(0, self.height * (1 - self.lander.surface_height), self.width, self.lander.surface_height * self.height)
+        surface_rect = pygame.Rect(0, self.height * (1 - self.lander.surface_height),
+                                   self.width, self.lander.surface_height * self.height)
         pygame.draw.rect(self.screen, self.surface_color, surface_rect)
 
         # Draw the base on the surface
-        base_rect = pygame.Rect((self.width * (1 + self.lander.base_x)/2 - 20, self.height * (1 - self.lander.surface_height)), (40, 20))
+        base_rect = pygame.Rect((self.width * (1 + self.lander.base_x) /
+                                2 - 20, self.height * (1 - self.lander.surface_height)), (40, 20))
         pygame.draw.rect(self.screen, self.base_color, base_rect)
 
         # Calculate lander position
@@ -35,7 +38,8 @@ class LunarLanderDisplay:
         lander_surface.fill(self.lander_color)
 
         # Rotate the lander surface by the angle of the lander
-        rotated_lander = pygame.transform.rotate(lander_surface, -math.degrees(self.lander.angle))
+        rotated_lander = pygame.transform.rotate(
+            lander_surface, -math.degrees(self.lander.angle))
 
         # Get the new rect for the rotated surface
         rotated_rect = rotated_lander.get_rect(center=(lander_x, lander_y))
@@ -45,17 +49,20 @@ class LunarLanderDisplay:
 
         # Draw the thruster fire based on the action
         if action == 1:  # Main engine fire
-            thruster_rect = pygame.Rect(rotated_rect.centerx - 2, rotated_rect.bottom, 4, 10)
+            thruster_rect = pygame.Rect(
+                rotated_rect.centerx - 2, rotated_rect.bottom, 4, 10)
             pygame.draw.rect(self.screen, self.thruster_color, thruster_rect)
         if action == 2:  # Left-side engine fire
-            thruster_rect = pygame.Rect(rotated_rect.left - 10, rotated_rect.centery - 2, 10, 4)
+            thruster_rect = pygame.Rect(
+                rotated_rect.left - 10, rotated_rect.centery - 2, 10, 4)
             pygame.draw.rect(self.screen, self.thruster_color, thruster_rect)
         if action == 3:  # Right-side engine fire
-            thruster_rect = pygame.Rect(rotated_rect.right, rotated_rect.centery - 2, 10, 4)
+            thruster_rect = pygame.Rect(
+                rotated_rect.right, rotated_rect.centery - 2, 10, 4)
             pygame.draw.rect(self.screen, self.thruster_color, thruster_rect)
 
         pygame.display.flip()
-        pygame.time.wait(100)
+        pygame.time.wait(500)
 
     def close(self):
         pygame.time.wait(1000)

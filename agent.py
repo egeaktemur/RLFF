@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class LunarLander:
     g = -0.001625
     action_space = np.array([0, 1, 2, 3])
@@ -7,7 +8,9 @@ class LunarLander:
     # 1: Fire main engine
     # 2: Fire left-side engine
     # 3: Fire right-side engine
-    thrust_map = {0: (0, 0, 0), 1: (0.001, 0, 0), 2: (0, 0.005, 0.002), 3: (0, -0.005, -0.002)}
+    thrust_map = {0: (0, 0, 0), 1: (0.001, 0, 0), 2: (
+        0, 0.005, 0.002), 3: (0, -0.005, -0.002)}
+
     def __init__(self, arg=None):
         self.done = False
         self.fuel = 100
@@ -16,39 +19,49 @@ class LunarLander:
         elif isinstance(arg, LunarLander):
             self.set_state(arg.get_state())
         elif arg is None:
-            self.x, self.y = np.random.uniform(-0.75, 0.75), np.random.uniform(0.9, 1)
-            self.vx, self.vy = np.random.uniform(-0.001, 0.001), np.random.uniform(-0.001, 0.001)
-            self.angle, self.angular_velocity = np.random.uniform(-0.001, 0.001), np.random.uniform(-0.0005, 0.0005)
+            self.x, self.y = np.random.uniform(-0.75,
+                                               0.75), np.random.uniform(0.9, 1)
+            self.vx, self.vy = np.random.uniform(-0.001,
+                                                 0.001), np.random.uniform(-0.001, 0.001)
+            self.angle, self.angular_velocity = np.random.uniform(
+                -0.001, 0.001), np.random.uniform(-0.0005, 0.0005)
             self.surface_height = np.random.uniform(0.1, 0.2)
             self.base_x = np.random.uniform(-0.5, 0.5)
         else:
-            raise TypeError("Invalid argument type. Must be LunarLander, dict, or None.")
-        
+            raise TypeError(
+                "Invalid argument type. Must be LunarLander, dict, or None.")
+
     def reward(self):
         if self.y <= self.surface_height:
             self.done = True
             distance_penalty = abs(self.x - self.base_x)
             angle_penalty = abs(self.angle)
-            if distance_penalty < 10 and angle_penalty < 0.1:  # Adjusted landing criteria
+            if distance_penalty < 0.1 and angle_penalty < 0.1:  # Adjusted landing criteria
                 reward = 10  # Successful landing
+                print("LANDED")
             else:
                 reward = -10  # Crash
+                print("CRASH")
             # Adjust penalties to scale with the increased range of velocities and angles
-            reward -= 1 * np.sqrt(self.vx**2 + self.vy**2)  # Velocity penalty
-            reward -= 3 * angle_penalty / np.pi  # Angle penalty, increased weight
-            reward -= 0.5 * distance_penalty  # Distance from base penalty, softened
+            reward -= 20 * np.sqrt(self.vx**2 + self.vy**2)  # Velocity penalty
+            reward -= 15 * angle_penalty / np.pi  # Angle penalty, increased weight
+            reward -= 10 * distance_penalty  # Distance from base penalty, softened
         else:
             # Rewards and penalties while in air
-            reward = 2 * (1 - min(abs(self.x - self.base_x), 1))  # Soften penalty, scale with init range
-            reward -= 1 * (np.sqrt(self.vx**2 + self.vy**2))  # Less penalty for higher velocities
-            reward -= 1 * abs(self.angle) / np.pi  # Consistent with landed angle penalty
-            reward += 0.001 * self.fuel  # Assuming fuel is tracked and penalized elsewhere
+            # Soften penalty, scale with init range
+            reward = 1.5 * (2 - abs(self.x - self.base_x))
+            # Less penalty for higher velocities
+            reward -= 2 * (np.sqrt(self.vx**2 + self.vy**2))
+            # Consistent with landed angle penalty
+            reward -= 2 * abs(self.angle)
+            reward += 0.0005 * self.fuel
         return reward
 
     def action_to_thrust(self, action):
         if self.fuel <= 0:
             return 0, 0, 0
-        thrust, side_thrust, angular_impact = self.thrust_map.get(action, (0, 0, 0))
+        thrust, side_thrust, angular_impact = self.thrust_map.get(
+            action, (0, 0, 0))
         if self.fuel < 10:
             thrust *= 0.5
             side_thrust *= 0.5
