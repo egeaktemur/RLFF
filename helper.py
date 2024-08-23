@@ -78,7 +78,7 @@ def randomlyGenerateX_neg(x, y):
 def overlay_y_on_x(x, y=None, neu=False, output_dim=10, add = False):
     x_ = x.clone()
     if add:
-      x_ = np.concatenate((x, np.zeros(output_dim)), axis=0)
+        x_ = torch.cat((x_, torch.zeros(x_.size(0), output_dim, device=x.device)), dim=1)
     if neu:
         x_[:, -output_dim:] = 1/output_dim
     else:

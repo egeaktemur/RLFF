@@ -132,7 +132,7 @@ class FFBaseNet(torch.nn.Module):
     def forward(self, x):
         goodness_per_label = []
         for label_index, label in enumerate(range(self.output_dim)):
-            h = overlay_y_on_x(x, label, neu=False, num=self.output_dim)
+            h = overlay_y_on_x(x, label, neu=False, output_dim=self.output_dim)
             h = self.layers[0].output(h)
             goodness = []
             for layer_index, layer in enumerate(self.layers[1:]):
