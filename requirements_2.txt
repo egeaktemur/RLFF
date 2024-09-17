@@ -1,0 +1,10 @@
+numpy==1.26.4
+pandas==2.2.2
+pygame==2.6.0
+scikit_learn==1.5.1
+torch==2.1.0+cu121
+torchvision==0.16.0
+matplotlib==3.9.2
+gymnasium==0.29.1
+swig==4.2.1
+gymnasium[box2d]
