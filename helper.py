@@ -75,18 +75,31 @@ def randomlyGenerateX_neg(x, y):
     return overlay_y_on_x(x, random_labels, False, num_classes).to(DEVICE)
 
 
-def overlay_y_on_x(x, y=None, neu=False, output_dim=10, add = False):
+def overlay_y_on_x(x, y=None, neu=False, output_dim=10, add = False, single_item=False):
     x_ = x.clone()
+    if single_item:
+        x_ = x_.unsqueeze(0)
     if add:
         x_ = torch.cat((x_, torch.zeros(x_.size(0), output_dim, device=x.device)), dim=1)
     if neu:
         x_[:, -output_dim:] = 1/output_dim
     else:
         x_[:, -output_dim:] = 0.0
-        y_indices = y + (x.shape[1] - output_dim)
-        x_[range(x.shape[0]), y_indices] = 1.0
+        y_indices = y + (x_.shape[1] - output_dim)
+        x_[range(x_.shape[0]), y_indices] = 1.0
     return x_
 
+def overlay_y_on_x_single(x, y=None, neu=False, output_dim=10, add=False):
+    x_ = x.clone()
+    if add:
+        x_ = torch.cat((x_, torch.zeros(output_dim, device=x.device)), dim=0)
+    if neu:
+        x_[-output_dim:] = 1/output_dim
+    else:
+        x_[-output_dim:] = 0.0
+        y_index = y + (x_.shape[0] - output_dim)
+        x_[y_index] = 1.0
+    return x_
 
 def move(x):
     return torch.tensor(x, dtype=torch.float, device=DEVICE)

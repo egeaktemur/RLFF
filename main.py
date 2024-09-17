@@ -6,7 +6,6 @@ from networks import FFNet
 from agent import LunarLander
 from display import LunarLanderDisplay
 
-
 def trainFF_MNIST(learning_rate=0.01, threshold_coeff=0.01, adaptive_x_neg=False, epochs=100,
                   use_classifier=False, use_regressor=False, lr_cooldown=True,
                   split=None, seed=42, randomize_each_chapter=False, batch_size=64):
@@ -25,7 +24,6 @@ def trainFF_MNIST(learning_rate=0.01, threshold_coeff=0.01, adaptive_x_neg=False
     net.train_net(x_train_pos, x_train_neg, x_train_neu, y_train, x_test, x_test_neu, y_test, total_size,
                   epochs=epochs, adaptive_x_neg=adaptive_x_neg, split=split,
                   randomize_each_chapter=randomize_each_chapter, lr_cooldown=lr_cooldown)
-
 
 def trainFF_CIFAR(learning_rate=0.01, threshold_coeff=0.01, adaptive_x_neg=False, epochs=100,
                   use_classifier=False, use_regressor=False, lr_cooldown=True,
@@ -47,7 +45,6 @@ def trainFF_CIFAR(learning_rate=0.01, threshold_coeff=0.01, adaptive_x_neg=False
                   epochs=epochs, adaptive_x_neg=adaptive_x_neg, split=split,
                   randomize_each_chapter=randomize_each_chapter, lr_cooldown=lr_cooldown)
 
-
 def trainFF_HOUSE(learning_rate=0.01, threshold_coeff=0.01, adaptive_x_neg=False, epochs=100,
                   use_classifier=False, use_regressor=False, lr_cooldown=True, bins=10,
                   split=None, seed=42, randomize_each_chapter=False, batch_size=64):
@@ -68,7 +65,6 @@ def trainFF_HOUSE(learning_rate=0.01, threshold_coeff=0.01, adaptive_x_neg=False
                   x_test, x_test_neu, y_test, total_size, y_train_num=y_train_num, y_test_num=y_test_num,
                   epochs=epochs, adaptive_x_neg=adaptive_x_neg, split=split,
                   randomize_each_chapter=randomize_each_chapter, lr_cooldown=lr_cooldown)
-
 
 def sim():
     env = LunarLander()
