@@ -89,21 +89,8 @@ def overlay_y_on_x(x, y=None, neu=False, output_dim=10, add = False, single_item
         x_[range(x_.shape[0]), y_indices] = 1.0
     return x_
 
-def overlay_y_on_x_single(x, y=None, neu=False, output_dim=10, add=False):
-    x_ = x.clone()
-    if add:
-        x_ = torch.cat((x_, torch.zeros(output_dim, device=x.device)), dim=0)
-    if neu:
-        x_[-output_dim:] = 1/output_dim
-    else:
-        x_[-output_dim:] = 0.0
-        y_index = y + (x_.shape[0] - output_dim)
-        x_[y_index] = 1.0
-    return x_
-
 def move(x):
     return torch.tensor(x, dtype=torch.float, device=DEVICE)
-
 
 def process_data(df, x_columns, y_column, quantiles=10, device=DEVICE):
     scaler = StandardScaler()
@@ -131,7 +118,6 @@ def process_data(df, x_columns, y_column, quantiles=10, device=DEVICE):
     x_test_neu = overlay_y_on_x(x_test,  neu=True, num=quantiles)
     total_size = len(train_df)
     return (x_train_pos, x_train_neg, x_train_neu, y_train, y_train_num, x_test, x_test_neu, y_test, y_test_num, total_size)
-
 
 def get_model_name(split, learning_rate, threshold_coeff, adaptive_x_neg, use_classifier, use_regressor, randomize_each_chapter):
     model_name = "ff"

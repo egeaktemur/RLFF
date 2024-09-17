@@ -5,7 +5,7 @@ import gymnasium as gym
 from torch.optim import Adam
 from torch.distributions import Categorical
 from layers import BPLayer, FFLayer, FFClassifier, FFRegressor
-from helper import overlay_y_on_x, overlay_y_on_x_single, randomlyGenerateX_neg
+from helper import overlay_y_on_x, randomlyGenerateX_neg
 
 import torch.optim as optim
 import torch.nn.functional as F
