@@ -6,7 +6,7 @@ import threading
 import gymnasium as gym
 from collections import deque
 from networks import RLNet, FFNet, DDPGNet, ActorCriticNet
-from helper import overlay_y_on_x, overlay_y_on_x_single
+from helper import overlay_y_on_x
 
 def train_ff_model_imit(env, mentor_model, ff_model: FFNet, epochs=10, buffer_capacity=20000, buffer_replace_percent=0.4, use_classifier=False):
     pos_buffer = deque(maxlen=buffer_capacity)
@@ -53,11 +53,9 @@ def train_ff_model_imit(env, mentor_model, ff_model: FFNet, epochs=10, buffer_ca
             if epoch > 0 and epoch % 50 == 0:
                 print(f'Epoch {epoch}, Avg. Loss: {sum(losses)/len(losses)}')
         if epoch>0 and epoch%100 == 0:
-            good_thread = threading.Thread(target=test_model, args=(ff_model, "ff", env_name, 5, "Goodness"))
-            good_thread.start()
+            test_model(ff_model, "ff", env_name, 5, "Goodness")
             if use_classifier:
-                class_thread = threading.Thread(target=test_model, args=(ff_model, "ff", env_name, 5, "Classifier"))
-                class_thread.start()
+                test_model(ff_model, "ff", env_name, 5, "Classifier")
         if epoch > 0 and epoch % 1000 == 0:
             torch.save(ff_model, model_path_ff)
 
@@ -177,7 +175,7 @@ elif mentor == "actor_critic":
                                             learning_rate=0.01)
         actor_critic_model.train_actor_critic_model(train_env, num_episodes=3000)
         torch.save(actor_critic_model, model_path_actor_critic)
-    #test_model(actor_critic_model, "actor_critic", env_name)
+    test_model(actor_critic_model, "actor_critic", env_name)
     mentor_model = actor_critic_model
     
 def train_ff_model(env_name, model_path_ff, input_dim, output_dim, hidden_dims, use_classifier, mentor, mentor_model):
