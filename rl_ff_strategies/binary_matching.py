@@ -11,6 +11,7 @@ import torch
 import gymnasium as gym
 from networks import FFNet
 from helper import overlay_y_on_x, move
+import logging
 
 
 DEVICE = "cpu"
@@ -21,13 +22,16 @@ elif torch.backends.mps.is_available():
 print(DEVICE)
 
 ENV_NAME = "LunarLander-v2"
-HIDDEN_DIMS = [1000, 1000, 1000]  # Set hidden layers as 3x1000
-N_SAMPLES = 30
-MAX_STEPS = 200
-EPOCHS = 200
+HIDDEN_DIMS = [2000, 2000, 2000, 2000]  # Set hidden layers as 3x1000
+N_TRAJ_SAMPLES = 5
+MAX_STEPS = 500
+EPOCHS = 3000
 # For LunarLander the range of 8-dimensional state space is: [(-1.5, 1.5), (-1.5, 1.5), (-5, 5), (-5, 5), (-3.14, 3.14), (-5, 5), {0, 1}, {0, 1}]
-STATE_DIM_THRESHOLDS = [0.01, 0.01, 0.03, 0.03, 0.02, 0.03, 1, 1]
+STATE_DIM_THRESHOLDS = [0.03, 0.03, 0.1, 0.1, 0.0628, 0.1, 1, 1]
 GAMMA = 0.99
+
+LOG_STEPS = 50
+SAVE_STEPS = 500
 
 ###################
 # Data Generation #
@@ -55,7 +59,7 @@ def sample_trajectories(env, policy, n, max_steps=np.inf, gamma=0.99):
         done = False
         trajectory = []
 
-        for t in range(max_steps):
+        while True:
             action_probs = policy(state)
             action = np.random.choice(len(action_probs), p=action_probs)
 
@@ -64,7 +68,7 @@ def sample_trajectories(env, policy, n, max_steps=np.inf, gamma=0.99):
             state = next_state
             total_reward += reward
 
-            if done:
+            if done or len(trajectory) >= max_steps:
                 break
 
         # calculate discounted returns
@@ -164,17 +168,20 @@ def train_ff_model(model, env, epochs,  n, max_steps, gamma, thresholds, method=
 
     model.train()  # Set the model to training mode
     model.epochs = epochs
-    for epoch in range(epochs):
-        print(f"Epoch {epoch + 1}/{epochs}")
+    print(f"Epoch 1/{epochs}")
+    for epoch in range(1, epochs + 1):
+        if epoch % LOG_STEPS == 0:
+            print(f"Epoch {epoch}/{epochs}")
         # wrap current model into a policy (input a state and output action probabilities
         current_policy = partial(get_action_probs, ffnet=model, method=method)
         # sample trajectories
         trajectories, avg_total_reward = sample_trajectories(env, current_policy, n, max_steps, gamma)
-        print(f"Average Total Reward per Episode: {avg_total_reward}")
+        if epoch % LOG_STEPS == 0:
+            print(f"Average Total Reward per Episode: {avg_total_reward}")
+            logging.info('', extra={'epoch': epoch, 'avg_total_reward': avg_total_reward})
 
         # bin states
-        bins = bin_states(trajectories, thresholds, plot=True)
-        # ToDo: Put into separate method? or leave like that
+        bins = bin_states(trajectories, thresholds, plot=False)
         pos_states = []
         pos_actions = []
         neg_states = []
@@ -185,6 +192,9 @@ def train_ff_model(model, env, epochs,  n, max_steps, gamma, thresholds, method=
             # d1 and d2 are tuples of (state, action, lt_reward)
             for d1, d2 in combinations(value, 2):
                 # NOTE: here currently just for the Goodness method Todo: add for Classifier
+                # continue if the actions are the same
+                if d1[1] == d2[1]:
+                    continue
                 if d1[2] > d2[2]:
                     pos_states.append(d1[0])
                     pos_actions.append(d1[1])
@@ -195,15 +205,18 @@ def train_ff_model(model, env, epochs,  n, max_steps, gamma, thresholds, method=
                     pos_actions.append(d2[1])
                     neg_states.append(d1[0])
                     neg_actions.append(d1[1])
-        print(f"Number of positive/negative data points: {len(pos_states)}")
+        if epoch % LOG_STEPS == 0:
+            print(f"Number of positive/negative data points: {len(pos_states)}")
         if len(pos_states) == 0:
-            print("No positive/negative data points found. Skipping epoch.")
+            print(f"No positive/negative data points found. Skipping epoch {epoch}.")
             continue
         # construct training input with overlay
         pos_data = overlay_y_on_x(move(np.array(pos_states)), pos_actions, neu=False, output_dim=model.output_dim, add=True)
         neg_data = overlay_y_on_x(move(np.array(neg_states)), neg_actions, neu=False, output_dim=model.output_dim, add=True)
 
-        # ToDo: Check Training code, especially if nb of elements in pos_data and neg_data are too many
+        neu_data = overlay_y_on_x(move(np.array(pos_states)), neu=True, output_dim=model.output_dim, add=True)
+        labels = pos_actions
+
         model.total_size = len(pos_data)
         for layer_index, layer in enumerate(model.layers):
             layer_loss = 0
@@ -214,24 +227,37 @@ def train_ff_model(model, env, epochs,  n, max_steps, gamma, thresholds, method=
                     pos_data[start_index:end_index], neg_data[start_index:end_index])
             if layer_index != len(model.layers) - 1:
                 pos_data, neg_data = layer.output(pos_data), layer.output(neg_data)
-            print(f"Layer {layer_index} Loss: {layer_loss}")
+            if epoch % LOG_STEPS == 0:
+                print(f"Layer {layer_index} Loss: {layer_loss}")
 
-    # save model
-    torch.save(model, save_path + ".pth")
-    print(f"Model saved at {save_path}.pth")
+        if method == "Classifier":
+            # NOTE: self.learning_rate_cooldown(chapter-1) has to be adjusted in the class function (to get right epoch)
+            model.train_BP_Layers(neu_data, torch.tensor(labels, device=DEVICE), chapter=epoch, use_batches=True)
+
+        if epoch % SAVE_STEPS == 0:
+            path = f"{save_path}_{epoch}.pth"
+            torch.save(model, path)
+            print(f"Model saved at {path}")
 
 
 if __name__ == "__main__":
-
     model_name = f"{ENV_NAME}_FFNet"
+    method = "Classifier"
+
+    # Set up logging
+    logging.basicConfig(
+        filename=f'{model_name}_{method}.txt',  # Log file name
+        level=logging.INFO,  # Log level
+        format='Epoch %(epoch)s - Avg Reward: %(avg_total_reward)s',  # Log format
+    )
     # create gym environment
     env = gym.make(ENV_NAME)
     input_dim = env.observation_space.shape[0] # 8 for LunarLander
     output_dim = env.action_space.n  # 4 for LunarLander
 
     # Initialize the FFNet model
-    ff_model = FFNet(dims=[input_dim + output_dim] + HIDDEN_DIMS, output_dim=output_dim)
-    train_ff_model(model=ff_model, env=env, epochs=EPOCHS, n=N_SAMPLES, max_steps=MAX_STEPS, gamma=GAMMA,
-                   thresholds=STATE_DIM_THRESHOLDS, method="Goodness", save_path=model_name)
+    ff_model = FFNet(dims=[input_dim + output_dim] + HIDDEN_DIMS, output_dim=output_dim, use_classifier=method=="Classifier")
+    train_ff_model(model=ff_model, env=env, epochs=EPOCHS, n=N_TRAJ_SAMPLES, max_steps=MAX_STEPS, gamma=GAMMA,
+                   thresholds=STATE_DIM_THRESHOLDS, method="Goodness", save_path=os.path.join('..', 'models', model_name + method + 'pairwise'))
 
 

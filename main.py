@@ -89,3 +89,51 @@ def sim():
             observation = env.reset()
     display.render(best_action)
     display.close()
+
+
+from rl_ff_strategies.buffer_min_max import get_action_probs
+import numpy as np
+import gymnasium as gym
+import pygame
+from PIL import Image
+
+
+def sim_trained_agent(model, method='Goodness'):
+    # init pygame
+    pygame.init()
+    displaysurf = pygame.display.set_mode((500, 500), 0, 32)
+    clock = pygame.time.Clock()
+    pygame.display.flip()
+
+    # init Lunar environment
+    env = gym.make("LunarLander-v2", render_mode='rgb_array')
+    state, _ = env.reset()
+    done = False
+    step = 0
+
+    while not done:
+        step+=1
+        action_probs = get_action_probs(state, model, method)
+        action = np.argmax(action_probs)
+        state, reward, done, _, _ = env.step(action)
+        image = env.render()
+
+        # render with pygame
+        image = Image.fromarray(image, 'RGB')
+        mode, size, data = image.mode, image.size, image.tobytes()
+        image = pygame.image.fromstring(data, size, mode)
+
+        displaysurf.blit(image, (0, 0))
+        pygame.display.update()
+        clock.tick(100)
+
+        print(f"Step: {step}, Action: {action}, Reward: {reward}, Done: {done}")
+
+
+if __name__ == '__main__':
+    # Note, that in general only saving the state_dict and loading with weights_only=True is preferred
+    model_name = "LunarLander-v2_FFNet.pth"
+    model = torch.load(model_name, weights_only=False)
+    model.eval()
+
+    sim_trained_agent(model, method='Goodness')
