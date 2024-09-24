@@ -159,12 +159,10 @@ class FFNet(FFBaseNet):
         self.softmax, self.use_classifier, self.use_regressor = nn.Softmax(dim = 1), use_classifier, use_regressor
         if use_classifier:
             self.classifier_lr_coeff = 0.01
-            self.classifier = FFClassifier(sum(
-                dims[2:]), output_dim, learning_rate * self.classifier_lr_coeff, classifier_criterion)
+            self.classifier = FFClassifier(sum(dims[2:]), output_dim, learning_rate * self.classifier_lr_coeff, classifier_criterion)
         if use_regressor:
             self.regressor_lr_coeff = 0.01
-            self.regressor = FFRegressor(
-                sum(dims[2:]), 1, learning_rate * self.regressor_lr_coeff, regressor_criterion)
+            self.regressor  = FFRegressor(sum(dims[2:]), 1, learning_rate * self.regressor_lr_coeff, regressor_criterion)
         print("Finished creating model:", self.model_name)
 
     def predict(self, x, method="Goodness"):
@@ -199,11 +197,9 @@ class FFNet(FFBaseNet):
                 for layer in self.layers:
                     layer.opt.param_groups[0]['lr'] = learning_rate
                 if self.use_classifier:
-                    self.classifier.opt.param_groups[0]['lr'] = learning_rate * \
-                        self.classifier_lr_coeff
+                    self.classifier.opt.param_groups[0]['lr'] = learning_rate * self.classifier_lr_coeff
                 if self.use_regressor:
-                    self.regressor.opt.param_groups[0]['lr'] = learning_rate * \
-                        self.regressor_lr_coeff
+                    self.regressor.opt.param_groups[0]['lr'] = learning_rate * self.regressor_lr_coeff
 
     def generate_x_neg(self, x_train_neu, y_train_enc, adaptive_x_neg, randomize_each_chapter):
         if adaptive_x_neg and self.use_classifier:
@@ -241,7 +237,8 @@ class FFNet(FFBaseNet):
     def train_BP_Layers(self, x_train_neu, y_train, y_train_num=None, chapter=None, epochs=1, split=1, use_batches=False):
         input = self.get_activations(x_train_neu)
         for mini_epoch in range(epochs//split):
-            self.learning_rate_cooldown(self.current_epoch(chapter, mini_epoch))
+            if chapter is not None:
+                self.learning_rate_cooldown(self.current_epoch(chapter, mini_epoch))
             if use_batches:
                 for start_index, end_index in self.generate_batches():
                     if self.use_regressor:
@@ -586,6 +583,7 @@ class ActorCriticNet(nn.Module):
             value_loss = F.smooth_l1_loss(value, reward)
             loss += (action_loss + value_loss)   
             #print(f"Action Loss: {action_loss.item()}, Value Loss: {value_loss.item()}")
+        loss /= len(self.rewards)
         return loss
     
     def learning_rate_cooldown(self, epoch: int):
